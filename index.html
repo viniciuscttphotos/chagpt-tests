@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Belaria Death Tracker</title>
+
+<style>
+body{
+  background:#111;
+  color:#fff;
+  font-family:Arial;
+  padding:20px;
+}
+h1{color:#00ff99;}
+button,input{
+  padding:10px;
+  margin:5px;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
+}
+td,th{
+  border:1px solid #333;
+  padding:8px;
+}
+</style>
+</head>
+<body>
+
+<h1>Belaria Death Tracker</h1>
+
+<input id="lvl" value="400" type="number">
+<button onclick="buscar()">Buscar</button>
+<button onclick="auto()">Auto 10s</button>
+
+<div id="status"></div>
+
+<table>
+<thead>
+<tr>
+<th>Nome</th>
+<th>Tempo</th>
+<th>Level</th>
+</tr>
+</thead>
+<tbody id="lista"></tbody>
+</table>
+
+<script>
+let timer = null;
+
+/* AGORA USANDO API INTERNA (SEM CORS) */
+async function getDeaths(){
+
+  const res = await fetch("/api/deaths");
+  return await res.json();
+}
+
+async function buscar(){
+
+  status.innerHTML="Buscando...";
+  lista.innerHTML="";
+
+  try{
+
+    const data = await getDeaths();
+    const min = parseInt(lvl.value);
+
+    let total = 0;
+
+    data.forEach(d=>{
+
+      if(d.level < min) return;
+      if(d.minutes > 10) return;
+
+      lista.innerHTML += `
+        <tr>
+          <td>${d.name}</td>
+          <td>${d.minutes} min</td>
+          <td>${d.level}</td>
+        </tr>
+      `;
+
+      total++;
+    });
+
+    status.innerHTML = total+" mortes nos últimos 10 min.";
+
+  }catch(e){
+
+    status.innerHTML = "Erro ao buscar API.";
+    console.log(e);
+  }
+}
+
+function auto(){
+
+  if(timer){
+    clearInterval(timer);
+    timer=null;
+    status.innerHTML="Auto OFF";
+    return;
+  }
+
+  buscar();
+  timer=setInterval(buscar,10000);
+  status.innerHTML="Auto ON";
+}
+</script>
+
+</body>
+</html>
