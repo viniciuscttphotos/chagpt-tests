@@ -1,38 +1,34 @@
 export default async function handler(req, res) {
-
   try {
 
-    const r = await fetch("https://rubinot.com.br/deaths");
+    const r = await fetch("https://rubinot.com.br/deaths", {
+      headers:{
+        "User-Agent":"Mozilla/5.0"
+      }
+    });
+
     const html = await r.text();
 
-    const txt = html
-      .replace(/<script[\s\S]*?<\/script>/gi," ")
-      .replace(/<style[\s\S]*?<\/style>/gi," ")
-      .replace(/<[^>]+>/g,"\n");
+    const matches = [
+      ...html.matchAll(
+        /([A-Za-z0-9 ]+)\s+died[\s\S]{0,120}?Level\s*(\d+)[\s\S]{0,120}?(\d+)\s*(minute|min)/gi
+      )
+    ];
 
-    const linhas = txt.split("\n").map(l=>l.trim()).filter(Boolean);
-
-    const mortes = [];
-
-    for (let linha of linhas) {
-
-      const nome = linha.match(/^(.+?) died/i);
-      const level = linha.match(/level\s*(\d+)/i);
-      const tempo = linha.match(/(\d+)\s*(minute|min)/i);
-
-      if (nome && level && tempo) {
-        mortes.push({
-          name: nome[1],
-          level: parseInt(level[1]),
-          minutes: parseInt(tempo[1])
-        });
-      }
-    }
+    const mortes = matches.map(m => ({
+      name: m[1].trim(),
+      level: parseInt(m[2]),
+      minutes: parseInt(m[3])
+    }));
 
     res.status(200).json(mortes);
 
   } catch (e) {
 
-    res.status(500).json({ error: "fail" });
+    res.status(500).json({
+      error:"fail",
+      msg:e.toString()
+    });
+
   }
 }
